@@ -34,7 +34,13 @@ export default defineConfig({
   ],
   build: {
     target: "es2022",
-    sourcemap: false
+    sourcemap: false,
+    // cubing.jsのWorkerがアプリ側のmodulepreloadヘルパーを共有すると、
+    // Worker内でdocumentを参照して失敗するため、動的importを直接利用する。
+    modulePreload: {
+      polyfill: false,
+      resolveDependencies: () => []
+    }
   },
   test: {
     environment: "jsdom",

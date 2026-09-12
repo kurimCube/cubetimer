@@ -1,14 +1,5 @@
-import { registerSW } from "virtual:pwa-register";
-import { AppController } from "./app-controller";
-import "./styles.css";
-
-const app = new AppController();
-
-const updateSW = registerSW({
-  immediate: true,
-  onNeedRefresh() { app.showUpdateAvailable(); },
-  onRegisterError(error) { console.error("Service Workerを登録できませんでした", error); }
-});
-
-app.setUpdateHandler(() => updateSW(true));
-void app.start();
+// cubing.jsの検索Workerと共有される可能性があるエントリーでは、DOMを
+// 直接参照しない。ブラウザのメインスレッドだけでアプリを起動する。
+if (typeof document !== "undefined") {
+  void import("./bootstrap");
+}
