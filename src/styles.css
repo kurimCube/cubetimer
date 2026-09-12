@@ -45,6 +45,8 @@ button:disabled { cursor: not-allowed; opacity: .5; }
 .timer-view { min-height: calc(100dvh - 30px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); display: grid; grid-template-rows: auto auto minmax(220px, 1fr) auto; gap: 12px; }
 .app-header, .history-header, .section-heading-row, .history-item-top, .error-actions, .dialog-actions { display: flex; align-items: center; }
 .app-header { justify-content: space-between; gap: 14px; }
+.header-actions { display: flex; align-items: center; gap: 7px; }
+.header-history-button { min-height: 42px; border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; color: var(--accent); background: var(--surface); font-weight: 750; cursor: pointer; }
 .app-header h1, .history-header h1 { margin: 1px 0 0; font-size: clamp(1.15rem, 5vw, 1.5rem); letter-spacing: -.025em; }
 .eyebrow { margin: 0; color: var(--accent); font-size: .68rem; font-weight: 800; letter-spacing: .17em; }
 
@@ -52,15 +54,16 @@ button:disabled { cursor: not-allowed; opacity: .5; }
 .puzzle-button, .history-filters button { min-width: 58px; border: 0; border-radius: 9px; padding: 9px 11px; color: var(--muted); background: transparent; font-weight: 750; }
 .puzzle-button.is-active, .history-filters button[aria-pressed="true"] { color: #fff; background: var(--accent); }
 
-.scramble-card, .recent-card, .history-item, .error-panel { border: 1px solid var(--line); border-radius: 16px; color: var(--text); background: var(--surface); box-shadow: var(--shadow); }
+.scramble-card, .history-item, .error-panel { border: 1px solid var(--line); border-radius: 16px; color: var(--text); background: var(--surface); box-shadow: var(--shadow); }
 .scramble-card { padding: 12px 15px 14px; }
 .section-heading-row { justify-content: space-between; gap: 12px; }
 .section-heading-row h2 { margin: 0; color: var(--muted); font-size: .74rem; letter-spacing: .06em; text-transform: uppercase; }
 .scramble { min-height: 2.6em; margin: 9px 0 0; font-size: clamp(.95rem, 4vw, 1.15rem); font-weight: 650; line-height: 1.45; overflow-wrap: anywhere; }
 .scramble-long { font-size: clamp(.73rem, 3.25vw, .9rem); line-height: 1.42; }
 
+.timer-stage { position: relative; min-height: 220px; }
 .timer-pad {
-  width: 100%; min-height: 220px; border: 2px solid transparent; border-radius: 22px; padding: 20px;
+  width: 100%; height: 100%; min-height: inherit; border: 2px solid transparent; border-radius: 22px; padding: 20px;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
   color: var(--text); background: var(--surface); box-shadow: var(--shadow);
   touch-action: none; user-select: none; -webkit-user-select: none; transition: background-color 120ms ease, border-color 120ms ease, transform 80ms ease;
@@ -74,6 +77,10 @@ button:disabled { cursor: not-allowed; opacity: .5; }
 .timer-pad[data-state="READY"] .timer-output, .timer-pad[data-state="READY"] .timer-instruction { color: var(--ready); }
 .timer-pad[data-state="RUNNING"] { border-color: var(--accent); }
 .timer-pad[data-state="SAVE_FAILED"] { border-color: var(--danger); }
+.timer-result-actions { position: absolute; z-index: 2; left: 50%; bottom: clamp(16px, 4vh, 38px); transform: translateX(-50%); display: flex; gap: 8px; }
+.result-action { min-width: 62px; border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; color: var(--text); background: var(--surface-alt); box-shadow: 0 3px 12px rgb(20 31 55 / 10%); font-size: .82rem; font-weight: 780; cursor: pointer; }
+.result-action.is-selected { border-color: var(--accent); color: #fff; background: var(--accent); }
+.result-action.danger-text { color: var(--danger); }
 
 .running-stop-overlay {
   position: fixed; z-index: 20; inset: 0; width: 100%; height: 100%; border: 0;
@@ -84,18 +91,7 @@ button:disabled { cursor: not-allowed; opacity: .5; }
 .running-timer-output { font-size: clamp(5rem, 24vw, 9rem); font-weight: 800; line-height: .95; letter-spacing: -.065em; font-variant-numeric: tabular-nums; }
 .running-stop-overlay span { color: var(--muted); font-size: .95rem; font-weight: 700; }
 
-.recent-card { padding: 12px 15px; }
-.recent-list { list-style: none; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin: 10px 0 0; padding: 0; }
-.recent-list li:not(.empty-message) { min-width: 0; padding: 8px; border-radius: 10px; background: var(--surface-alt); text-align: center; }
-.recent-list .latest-solve { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; text-align: left; }
-.recent-summary { min-width: 0; }
-.recent-time { display: block; font-weight: 800; font-variant-numeric: tabular-nums; }
-.recent-list time { display: block; margin-top: 3px; overflow: hidden; color: var(--muted); font-size: .62rem; text-overflow: ellipsis; white-space: nowrap; }
 .empty-message { grid-column: 1 / -1; padding: 8px 0; color: var(--muted); text-align: center; font-size: .85rem; }
-.latest-actions { display: flex; flex: 0 0 auto; gap: 5px; }
-.recent-action { min-width: 46px; border: 1px solid var(--line); border-radius: 8px; padding: 7px 8px; color: var(--text); background: var(--surface); font-size: .76rem; font-weight: 750; }
-.recent-action.is-selected { border-color: var(--accent); color: #fff; background: var(--accent); }
-.recent-action.danger-text { color: var(--danger); }
 
 .text-button, .back-button, .delete-button { border: 0; color: var(--accent); background: transparent; font-weight: 700; cursor: pointer; }
 .text-button { padding: 4px; font-size: .82rem; }
@@ -137,17 +133,18 @@ button:disabled { cursor: not-allowed; opacity: .5; }
   .app-shell { padding-top: calc(8px + env(safe-area-inset-top)); }
   .timer-view { gap: 8px; }
   .scramble-card { padding-block: 9px; }
-  .timer-pad { min-height: 190px; padding: 14px; }
+  .timer-stage { min-height: 190px; }
+  .timer-pad { padding: 14px; }
   .timer-output { font-size: clamp(3.7rem, 18vw, 5.8rem); }
-  .recent-card { padding-block: 9px; }
+  .timer-result-actions { bottom: 12px; }
 }
 
 @media (max-width: 470px) {
   .app-header h1 { font-size: 1.08rem; }
+  .header-actions { gap: 4px; }
+  .header-history-button { padding-inline: 9px; font-size: .8rem; }
   .puzzle-button { min-width: 52px; padding-inline: 8px; }
-  .recent-list { gap: 5px; }
-  .recent-list li:not(.empty-message) { padding-inline: 3px; }
-  .recent-time { font-size: .83rem; }
+  .result-action { min-width: 58px; padding-inline: 10px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

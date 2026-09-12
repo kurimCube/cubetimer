@@ -20,9 +20,12 @@
             <p class="eyebrow">CUBE TIMER</p>
             <h1 id="app-title">軽量キューブタイマー</h1>
           </div>
-          <div class="puzzle-switch" aria-label="種目切替">
-            <button class="puzzle-button is-active" data-puzzle="333" type="button" aria-pressed="true">3×3</button>
-            <button class="puzzle-button" data-puzzle="777" type="button" aria-pressed="false">7×7</button>
+          <div class="header-actions">
+            <button id="open-history" class="header-history-button" type="button">履歴</button>
+            <div class="puzzle-switch" aria-label="種目切替">
+              <button class="puzzle-button is-active" data-puzzle="333" type="button" aria-pressed="true">3×3</button>
+              <button class="puzzle-button" data-puzzle="777" type="button" aria-pressed="false">7×7</button>
+            </div>
           </div>
         </header>
 
@@ -34,10 +37,17 @@
           <p id="scramble" class="scramble" aria-live="polite">スクランブル生成中</p>
         </section>
 
-        <button id="timer-pad" class="timer-pad" type="button" disabled aria-describedby="timer-instruction">
-          <output id="timer-output" class="timer-output" aria-label="計測タイム">0.00</output>
-          <span id="timer-instruction" class="timer-instruction" aria-live="polite">準備中</span>
-        </button>
+        <div class="timer-stage">
+          <button id="timer-pad" class="timer-pad" type="button" disabled aria-describedby="timer-instruction">
+            <output id="timer-output" class="timer-output" aria-label="計測タイム">0.00</output>
+            <span id="timer-instruction" class="timer-instruction" aria-live="polite">準備中</span>
+          </button>
+          <div id="latest-actions" class="timer-result-actions" aria-label="前回ソルブの操作" hidden>
+            <button id="latest-plus2" class="result-action" data-latest-action="plus2" type="button" aria-pressed="false">+2</button>
+            <button id="latest-dnf" class="result-action" data-latest-action="dnf" type="button" aria-pressed="false">DNF</button>
+            <button id="latest-delete" class="result-action danger-text" data-latest-action="delete" type="button">削除</button>
+          </div>
+        </div>
 
         <div id="save-error" class="error-panel" role="alert" hidden>
           <p id="save-error-message">タイムを保存できませんでした。</p>
@@ -47,15 +57,6 @@
           </div>
         </div>
 
-        <section class="recent-card" aria-labelledby="recent-heading">
-          <div class="section-heading-row">
-            <h2 id="recent-heading">最近のタイム</h2>
-            <button id="open-history" class="text-button" type="button">履歴を見る</button>
-          </div>
-          <ol id="recent-list" class="recent-list">
-            <li class="empty-message">記録はまだありません</li>
-          </ol>
-        </section>
       </section>
 
       <button id="running-stop-overlay" class="running-stop-overlay" type="button" hidden aria-label="画面をタップしてタイマーを停止">
