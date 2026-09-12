@@ -46,14 +46,22 @@ try {
   await page.mouse.up();
   await page.waitForFunction(() => document.querySelector("#timer-pad")?.getAttribute("data-state") === "RUNNING");
   await page.waitForTimeout(80);
-  await pad.click();
+  await page.locator("#running-stop-overlay").click();
   await page.waitForFunction(() => {
     const item = document.querySelector("#recent-list li:not(.empty-message)");
     return item !== null;
   });
 
+  await page.locator('[data-recent-action="plus2"]').click();
+  await page.waitForFunction(() => document.querySelector(".latest-solve .recent-time")?.textContent?.endsWith("+"));
+  await page.locator('[data-recent-action="dnf"]').click();
+  await page.waitForFunction(() => document.querySelector(".latest-solve .recent-time")?.textContent?.startsWith("DNF"));
+  await page.locator('[data-recent-action="delete"]').click();
+  await page.locator('#confirm-dialog button[value="confirm"]').click();
+  await page.waitForFunction(() => document.querySelector("#recent-list .empty-message") !== null);
+
   if (errors.length > 0) throw new Error(errors.join("\n"));
-  console.log(JSON.stringify({ url, puzzle: "777", scrambleLength: (await scramble.textContent())?.length, timerSaved: true }));
+  console.log(JSON.stringify({ url, puzzle: "777", scrambleLength: (await scramble.textContent())?.length, timerSaved: true, penaltiesUpdated: true, latestDeleted: true }));
 } finally {
   await browser.close();
 }

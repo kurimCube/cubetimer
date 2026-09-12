@@ -4,7 +4,7 @@ import { generateScramble } from "./scramble/scramble-service";
 import { SolveRepository } from "./storage/solve-repository";
 import { TimerController } from "./timer/timer-controller";
 import { formatTime } from "./timer/time-format";
-import type { HistoryCursor, HistoryFilter, Puzzle, Solve, TimerState } from "./types";
+import type { HistoryCursor, HistoryFilter, Penalty, Puzzle, Solve, TimerState } from "./types";
 
 interface ScrambleSlot {
   value: string | null;
@@ -21,6 +21,8 @@ interface Elements {
   timerPad: HTMLButtonElement;
   timerOutput: HTMLOutputElement;
   timerInstruction: HTMLElement;
+  runningStopOverlay: HTMLButtonElement;
+  runningTimerOutput: HTMLOutputElement;
   recentList: HTMLOListElement;
   openHistory: HTMLButtonElement;
   closeHistory: HTMLButtonElement;
@@ -52,6 +54,7 @@ export class AppController {
   private historyCursor: HistoryCursor | undefined;
   private historyLoadId = 0;
   private historyBusy = false;
+  private recentSolves: Solve[] = [];
   private updateAvailable = false;
   private applyUpdateCallback: (() => Promise<void>) | null = null;
   private readonly scrambleSlots: Record<Puzzle, ScrambleSlot> = {
@@ -64,7 +67,10 @@ export class AppController {
     this.puzzle = this.restorePuzzle();
     this.timer = new TimerController(this.elements.timerPad, {
       onStateChange: (state) => this.renderTimerState(state),
-      onDisplayChange: (text) => { this.elements.timerOutput.value = text; },
+      onDisplayChange: (text) => {
+        this.elements.timerOutput.value = text;
+        this.elements.runningTimerOutput.value = text;
+      },
       onStop: (elapsedMs) => { void this.saveStoppedSolve(elapsedMs); },
       canStart: () => this.canStart()
     });
@@ -117,6 +123,16 @@ export class AppController {
     timerPad.addEventListener("pointercancel", (event) => this.timer.pointerCancel(event));
     timerPad.addEventListener("lostpointercapture", (event) => this.timer.pointerCancel(event));
     timerPad.addEventListener("contextmenu", (event) => event.preventDefault());
+    this.elements.runningStopOverlay.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      this.timer.pointerDown(event);
+    });
+    this.elements.runningStopOverlay.addEventListener("pointerup", (event) => {
+      event.preventDefault();
+      this.timer.pointerUp(event);
+    });
+    this.elements.runningStopOverlay.addEventListener("pointercancel", (event) => this.timer.pointerCancel(event));
+    this.elements.runningStopOverlay.addEventListener("contextmenu", (event) => event.preventDefault());
 
     document.addEventListener("keydown", (event) => {
       if (event.code !== "Space" || event.repeat || this.shouldIgnoreKeyboardTimer(event.target)) return;
@@ -134,6 +150,7 @@ export class AppController {
     });
     this.elements.scrambleRetry.addEventListener("click", () => void this.ensureScramble(this.puzzle, true));
     this.elements.openHistory.addEventListener("click", () => void this.openHistory());
+    this.elements.recentList.addEventListener("click", (event) => void this.handleRecentClick(event));
     this.elements.closeHistory.addEventListener("click", () => this.closeHistory());
     this.elements.historyFilters.addEventListener("click", (event) => {
       const button = (event.target as Element).closest<HTMLButtonElement>("button[data-filter]");
@@ -171,6 +188,7 @@ export class AppController {
 
   private renderTimerState(state: TimerState): void {
     this.elements.timerPad.dataset.state = state;
+    this.elements.runningStopOverlay.hidden = state !== "RUNNING";
     const messages: Record<TimerState, string> = {
       IDLE: this.scrambleSlots[this.puzzle].status === "ready" ? "長押しで開始" : "準備中",
       HOLDING: "そのまま長押し",
@@ -191,6 +209,9 @@ export class AppController {
     this.elements.puzzleButtons.forEach((button) => { button.disabled = locked; });
     this.elements.openHistory.disabled = locked;
     this.elements.scrambleRetry.disabled = locked;
+    this.elements.recentList.querySelectorAll<HTMLButtonElement>("button[data-recent-action]").forEach((button) => {
+      button.disabled = locked;
+    });
   }
 
   private async saveStoppedSolve(elapsedMs: number): Promise<void> {
@@ -316,6 +337,7 @@ export class AppController {
   private async loadRecent(): Promise<void> {
     try {
       const solves = await this.repository.listRecent(this.puzzle, RECENT_SOLVE_LIMIT);
+      this.recentSolves = solves;
       this.elements.recentList.replaceChildren();
       if (solves.length === 0) {
         const empty = document.createElement("li");
@@ -325,20 +347,78 @@ export class AppController {
         return;
       }
       const fragment = document.createDocumentFragment();
-      for (const solve of solves) {
+      solves.forEach((solve, index) => {
         const item = document.createElement("li");
+        if (solve.id !== undefined) item.dataset.id = String(solve.id);
+        if (index === 0) item.className = "latest-solve";
+        const summary = document.createElement("div");
+        summary.className = "recent-summary";
         const time = document.createElement("span");
         time.className = "recent-time";
-        time.textContent = formatTime(solve.timeMs);
+        time.textContent = formatSolveTime(solve);
         const date = document.createElement("time");
         date.dateTime = new Date(solve.createdAt).toISOString();
         date.textContent = formatShortDate(solve.createdAt);
-        item.append(time, date);
+        summary.append(time, date);
+        item.append(summary);
+        if (index === 0 && solve.id !== undefined) item.append(this.createLatestActions(solve));
         fragment.append(item);
-      }
+      });
       this.elements.recentList.append(fragment);
     } catch (error) {
       console.error("最近のタイムを取得できませんでした", error);
+    }
+  }
+
+  private createLatestActions(solve: Solve): HTMLElement {
+    const actions = document.createElement("div");
+    actions.className = "latest-actions";
+    const definitions: Array<{ action: string; label: string; selected: boolean; danger?: boolean }> = [
+      { action: "plus2", label: "+2", selected: solve.penalty === "plus2" },
+      { action: "dnf", label: "DNF", selected: solve.penalty === "dnf" },
+      { action: "delete", label: "削除", selected: false, danger: true }
+    ];
+    for (const definition of definitions) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.dataset.recentAction = definition.action;
+      button.className = `recent-action${definition.selected ? " is-selected" : ""}${definition.danger ? " danger-text" : ""}`;
+      button.setAttribute("aria-pressed", definition.action === "delete" ? "false" : String(definition.selected));
+      button.textContent = definition.label;
+      actions.append(button);
+    }
+    return actions;
+  }
+
+  private async handleRecentClick(event: Event): Promise<void> {
+    const button = (event.target as Element).closest<HTMLButtonElement>("button[data-recent-action]");
+    const item = button?.closest<HTMLLIElement>("li[data-id]");
+    if (!button || !item || this.timer.getState() !== "IDLE") return;
+    const id = Number(item.dataset.id);
+    const solve = this.recentSolves.find((candidate) => candidate.id === id);
+    if (!solve) return;
+
+    const action = button.dataset.recentAction;
+    if (action === "delete") {
+      if (!await this.confirm("直前の記録を削除", `${formatSolveTime(solve)}を削除しますか？`)) return;
+      await this.performRecentMutation(button, () => this.repository.delete(id), "記録を削除できませんでした");
+      return;
+    }
+    if (action === "plus2" || action === "dnf") {
+      const penalty: Penalty = solve.penalty === action ? "none" : action;
+      await this.performRecentMutation(button, () => this.repository.updatePenalty(id, penalty), "ペナルティを更新できませんでした");
+    }
+  }
+
+  private async performRecentMutation(button: HTMLButtonElement, mutation: () => Promise<void>, failureMessage: string): Promise<void> {
+    button.disabled = true;
+    try {
+      await mutation();
+      await this.loadRecent();
+    } catch (error) {
+      console.error(failureMessage, error);
+      button.disabled = false;
+      this.elements.timerInstruction.textContent = failureMessage;
     }
   }
 
@@ -415,7 +495,7 @@ export class AppController {
       const top = document.createElement("div");
       top.className = "history-item-top";
       const time = document.createElement("strong");
-      time.textContent = formatTime(solve.timeMs);
+      time.textContent = formatSolveTime(solve);
       const meta = document.createElement("span");
       meta.textContent = `${solve.puzzle === "333" ? "3×3" : "7×7"} · ${formatDate(solve.createdAt)}`;
       top.append(time, meta);
@@ -517,6 +597,7 @@ function collectElements(): Elements {
     puzzleButtons: document.querySelectorAll<HTMLButtonElement>(".puzzle-button"),
     scramble: required("#scramble"), scrambleRetry: required("#scramble-retry"),
     timerPad: required("#timer-pad"), timerOutput: required("#timer-output"), timerInstruction: required("#timer-instruction"),
+    runningStopOverlay: required("#running-stop-overlay"), runningTimerOutput: required("#running-timer-output"),
     recentList: required("#recent-list"), openHistory: required("#open-history"), closeHistory: required("#close-history"),
     historyFilters: required("#history-filters"), historyStatus: required("#history-status"), historyList: required("#history-list"), loadMore: required("#load-more"),
     saveError: required("#save-error"), saveRetry: required("#save-retry"), saveDiscard: required("#save-discard"),
@@ -531,4 +612,10 @@ function formatShortDate(timestamp: number): string {
 
 function formatDate(timestamp: number): string {
   return new Intl.DateTimeFormat("ja-JP", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }).format(timestamp);
+}
+
+function formatSolveTime(solve: Solve): string {
+  if (solve.penalty === "dnf") return `DNF (${formatTime(solve.timeMs)})`;
+  if (solve.penalty === "plus2") return `${formatTime(solve.timeMs + 2_000)}+`;
+  return formatTime(solve.timeMs);
 }

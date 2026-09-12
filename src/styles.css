@@ -75,12 +75,27 @@ button:disabled { cursor: not-allowed; opacity: .5; }
 .timer-pad[data-state="RUNNING"] { border-color: var(--accent); }
 .timer-pad[data-state="SAVE_FAILED"] { border-color: var(--danger); }
 
+.running-stop-overlay {
+  position: fixed; z-index: 20; inset: 0; width: 100%; height: 100%; border: 0;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+  color: var(--text); background: var(--bg); touch-action: none; user-select: none; -webkit-user-select: none;
+}
+.running-timer-output { font-size: clamp(5rem, 24vw, 9rem); font-weight: 800; line-height: .95; letter-spacing: -.065em; font-variant-numeric: tabular-nums; }
+.running-stop-overlay span { color: var(--muted); font-size: .95rem; font-weight: 700; }
+
 .recent-card { padding: 12px 15px; }
 .recent-list { list-style: none; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin: 10px 0 0; padding: 0; }
 .recent-list li:not(.empty-message) { min-width: 0; padding: 8px; border-radius: 10px; background: var(--surface-alt); text-align: center; }
+.recent-list .latest-solve { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; text-align: left; }
+.recent-summary { min-width: 0; }
 .recent-time { display: block; font-weight: 800; font-variant-numeric: tabular-nums; }
 .recent-list time { display: block; margin-top: 3px; overflow: hidden; color: var(--muted); font-size: .62rem; text-overflow: ellipsis; white-space: nowrap; }
 .empty-message { grid-column: 1 / -1; padding: 8px 0; color: var(--muted); text-align: center; font-size: .85rem; }
+.latest-actions { display: flex; flex: 0 0 auto; gap: 5px; }
+.recent-action { min-width: 46px; border: 1px solid var(--line); border-radius: 8px; padding: 7px 8px; color: var(--text); background: var(--surface); font-size: .76rem; font-weight: 750; }
+.recent-action.is-selected { border-color: var(--accent); color: #fff; background: var(--accent); }
+.recent-action.danger-text { color: var(--danger); }
 
 .text-button, .back-button, .delete-button { border: 0; color: var(--accent); background: transparent; font-weight: 700; cursor: pointer; }
 .text-button { padding: 4px; font-size: .82rem; }

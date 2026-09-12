@@ -1,5 +1,5 @@
 import { DB_NAME, DB_VERSION, SOLVE_STORE_NAME } from "../constants";
-import type { HistoryCursor, HistoryPage, Puzzle, Solve } from "../types";
+import type { HistoryCursor, HistoryPage, Penalty, Puzzle, Solve } from "../types";
 
 export class SolveRepository {
   private db: IDBDatabase | null = null;
@@ -59,6 +59,27 @@ export class SolveRepository {
       transaction.oncomplete = () => resolve();
       transaction.onerror = () => reject(transaction.error ?? new Error("削除に失敗しました"));
       transaction.onabort = () => reject(transaction.error ?? new Error("削除が中断されました"));
+    });
+  }
+
+  async updatePenalty(id: number, penalty: Penalty): Promise<void> {
+    const db = this.requireDb();
+    return new Promise<void>((resolve, reject) => {
+      const transaction = db.transaction(SOLVE_STORE_NAME, "readwrite");
+      const store = transaction.objectStore(SOLVE_STORE_NAME);
+      const request = store.get(id);
+
+      request.onsuccess = () => {
+        const solve = request.result as Solve | undefined;
+        if (!solve || !isValidSolve(solve)) {
+          transaction.abort();
+          return;
+        }
+        store.put({ ...solve, penalty });
+      };
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error ?? new Error("ペナルティの更新に失敗しました"));
+      transaction.onabort = () => reject(transaction.error ?? new Error("対象の記録が見つかりません"));
     });
   }
 

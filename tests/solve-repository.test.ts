@@ -48,6 +48,14 @@ describe("SolveRepository", () => {
     await repository.delete(id);
     expect(await repository.listRecent("333", 5)).toEqual([]);
   });
+
+  it("ペナルティを更新する", async () => {
+    const id = await repository.add(makeSolve("333", 1_000, 100));
+    await repository.updatePenalty(id, "plus2");
+    expect((await repository.listRecent("333", 1))[0]?.penalty).toBe("plus2");
+    await repository.updatePenalty(id, "dnf");
+    expect((await repository.listRecent("333", 1))[0]?.penalty).toBe("dnf");
+  });
 });
 
 function makeSolve(puzzle: Puzzle, timeMs: number, createdAt: number): Solve {
